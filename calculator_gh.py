@@ -1,3 +1,4 @@
+import re
 from tkinter import *
 import math
 
@@ -11,7 +12,20 @@ equation = ""
 
 def show(num):
     global equation
-    equation += num
+    if num == "\u221A":
+        equation += "math.sqrt("
+    elif num == "%":
+        # Handle percentage correctly
+        parts = re.split(r'(\D)', equation)
+        if len(parts) > 1 and parts[-2] in "+-*/":
+            last_num = parts[-1]
+            last_operator = parts[-2]
+            percentage = str(float(last_num) * 0.01 * float(parts[-3])) if last_operator in "+-" else str(float(last_num) * 0.01)
+            equation = "".join(parts[:-1]) + percentage
+        else:
+            equation += "*0.01"
+    else:
+        equation += num
     label_result.config(text=equation)
 
 
@@ -28,7 +42,11 @@ def calculate():
 
     if equation != "":
         try:
-            result = eval(equation)
+            equation_modified = equation + ")" * equation.count("math.sqrt(")
+            result = eval(equation_modified)
+
+            if isinstance(result, float) and result.is_integer():
+                result = int(result)
 
         except ZeroDivisionError:
             result = "Cannot divide by 0"
@@ -37,6 +55,8 @@ def calculate():
         except SyntaxError:
             result = "Syntax Error"
             equation = ""
+        else:
+            equation = str(result)
 
     label_result.config(text=result)
 
